@@ -1,0 +1,250 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Management</h1>
+
+    <h3>Search Students</h3>
+    <input type="text" id="searchInput" placeholder="Search by name">
+    <button onclick="searchStudents()">Search</button>
+    <button onclick="loadStudents()">Reset</button>
+
+    <form id="studentForm">
+        <input type="hidden" id="studentId">
+        <label for="fullname">Full Name:</label>
+        <input type="text" id="fullname" required>
+        <label for="age">Age:</label>
+        <input type="number" id="age" required>
+        <label for="mark">Mark:</label>
+        <input type="number" id="mark" required>
+        <label for="classId">Class:</label>
+        <select id="classId" required></select>
+        <label for="isActive">Is Active:</label>
+        <input type="checkbox" id="isActive">
+        <button type="submit">Save</button>
+    </form>
+    <h2>Students List</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Age</th>
+                <th>Mark</th>
+                <th>Class</th>
+                <th>Is Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="studentsTableBody">
+        </tbody>
+    </table>
+
+    <script>
+        const apiUrl = 'https://localhost:7067/api/students';
+        const classApiUrl = 'https://localhost:7067/api/classes';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStudents();
+            loadClasses();
+            document.getElementById('studentForm').addEventListener('submit', saveStudent);
+        });
+
+        async function loadStudents() {
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const students = await response.json();
+                const tbody = document.getElementById('studentsTableBody');
+                tbody.innerHTML = '';
+                students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                            <td>${student.id || ''}</td>
+                            <td>${student.fullname}</td>
+                            <td>${student.age}</td>
+                            <td>${student.mark}</td>
+                            <td>${student.className || ''}</td>
+                            <td>${student.isActive}</td>
+                            <td>
+                                <button onclick="editStudent(${student.id})">Edit</button>
+                                <button onclick="deleteStudent(${student.id})">Delete</button>
+                            </td>
+                        `;
+                    tbody.appendChild(row);
+                });
+                showMessage('Students loaded successfully');
+            } catch (error) {
+                showMessage(`Failed to load students: ${error.message}`);
+            }
+        }
+
+        async function loadClasses() {
+            try {
+                const response = await fetch(classApiUrl);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const classes = await response.json();
+                const classSelect = document.getElementById('classId');
+                classSelect.innerHTML = '<option value="">Select a class</option>';
+                classes.forEach(classEntity => {
+                    const option = document.createElement('option');
+                    option.value = classEntity.classId;
+                    option.textContent = classEntity.className;
+                    classSelect.appendChild(option);
+                });
+            } catch (error) {
+                showMessage(`Failed to load classes: ${error.message}`);
+            }
+        }
+
+        async function saveStudent(event) {
+            event.preventDefault();
+            const id = document.getElementById('studentId').value;
+            const fullname = document.getElementById('fullname').value.trim();
+            const age = parseFloat(document.getElementById('age').value);
+            const mark = parseInt(document.getElementById('mark').value);
+            const classId = parseInt(document.getElementById('classId').value);
+            const isActive = document.getElementById('isActive').checked;
+
+            if (!fullname) {
+                alert('Full Name is required');
+                return;
+            }
+            if (age <= 0 || isNaN(age)) {
+                alert('Age must be a positive number');
+                return;
+            }
+            if (mark < 0 || isNaN(mark)) {
+                alert('Mark must be a non-negative number');
+                return;
+            }
+            if (!classId || isNaN(classId)) {
+                alert('Class is required');
+                return;
+            }
+
+            const student = { id: id ? parseInt(id) : 0, fullname, age, mark, classId, isActive };
+
+            try {
+                const response = await fetch(id ? `${apiUrl}/${id}` : apiUrl, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(student)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(`Error: ${response.status} - ${errorData.title || 'Unknown error'}`);
+                    return;
+                }
+
+                document.getElementById('studentForm').reset();
+                loadStudents();
+                showMessage(id ? 'Student updated successfully' : 'Student added successfully');
+            } catch (error) {
+                alert(`Request failed: ${error.message}`);
+            }
+        }
+
+        async function editStudent(id) {
+            try {
+                const response = await fetch(`${apiUrl}/${id}`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const student = await response.json();
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('fullname').value = student.fullname;
+                document.getElementById('age').value = student.age;
+                document.getElementById('mark').value = student.mark;
+                document.getElementById('classId').value = student.classId;
+                document.getElementById('isActive').checked = student.isActive;
+            } catch (error) {
+                showMessage(`Failed to load student: ${error.message}`);
+            }
+        }
+
+        async function deleteStudent(id) {
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                loadStudents();
+                showMessage('Student deleted successfully');
+            } catch (error) {
+                showMessage(`Failed to delete student: ${error.message}`);
+            }
+        }
+
+        async function searchStudents() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/search?name=${encodeURIComponent(searchTerm)}`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const students = await response.json();
+                const tbody = document.getElementById('studentsTableBody');
+                tbody.innerHTML = '';
+
+                students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                            <td>${student.id || ''}</td>
+                            <td>${student.fullname}</td>
+                            <td>${student.age}</td>
+                            <td>${student.mark}</td>
+                            <td>${student.class ? student.class.className : ''}</td>
+                            <td>${student.isActive}</td>
+                            <td>
+                                <button onclick="editStudent(${student.id})">Edit</button>
+                                <button onclick="deleteStudent(${student.id})">Delete</button>
+                            </td>
+                        `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                showMessage(`Failed to search students: ${error.message}`);
+            }
+        }
+
+        function showMessage(message) {
+            alert(message);
+        }
+    </script>
+</body>
+</html>
+
