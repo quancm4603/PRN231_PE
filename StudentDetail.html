@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Detail</title>
+    <style>
+        .detail-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+            .detail-container h2 {
+                text-align: center;
+            }
+
+            .detail-container p {
+                margin: 10px 0;
+            }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <h2>Student Detail</h2>
+        <p><strong>ID:</strong> <span id="studentId"></span></p>
+        <p><strong>Full Name:</strong> <span id="fullname"></span></p>
+        <p><strong>Age:</strong> <span id="age"></span></p>
+        <p><strong>Mark:</strong> <span id="mark"></span></p>
+        <p><strong>Class:</strong> <span id="className"></span></p>
+        <p><strong>Is Active:</strong> <span id="isActive"></span></p>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <script>const apiUrl = 'https://localhost:7067/api/students';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentId = urlParams.get('id');
+            if (studentId) {
+                loadStudentDetail(studentId);
+            }
+        });
+
+        async function loadStudentDetail(id) {
+            try {
+                const response = await fetch(`${apiUrl}/${id}`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                const student = await response.json();
+                document.getElementById('studentId').textContent = student.id;
+                document.getElementById('fullname').textContent = student.fullname;
+                document.getElementById('age').textContent = student.age;
+                document.getElementById('mark').textContent = student.mark;
+                document.getElementById('className').textContent = student.className;
+                document.getElementById('isActive').textContent = student.isActive ? 'Yes' : 'No';
+            } catch (error) {
+                alert(`Failed to load student detail: ${error.message}`);
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }</script>
+</body>
+</html>

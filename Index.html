@@ -81,17 +81,18 @@
                 students.forEach(student => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                            <td>${student.id || ''}</td>
-                            <td>${student.fullname}</td>
-                            <td>${student.age}</td>
-                            <td>${student.mark}</td>
-                            <td>${student.className || ''}</td>
-                            <td>${student.isActive}</td>
-                            <td>
-                                <button onclick="editStudent(${student.id})">Edit</button>
-                                <button onclick="deleteStudent(${student.id})">Delete</button>
-                            </td>
-                        `;
+                 <td>${student.id || ''}</td>
+                 <td>${student.fullname}</td>
+                 <td>${student.age}</td>
+                 <td>${student.mark}</td>
+                 <td>${student.className || ''}</td>
+                 <td>${student.isActive}</td>
+                 <td>
+                     <button onclick="editStudent(${student.id})">Edit</button>
+                     <button onclick="deleteStudent(${student.id})">Delete</button>
+                     <button onclick="viewStudentDetail(${student.id})">View Detail In new page</button>
+                 </td>
+             `;
                     tbody.appendChild(row);
                 });
                 showMessage('Students loaded successfully');
@@ -243,6 +244,10 @@
 
         function showMessage(message) {
             alert(message);
+        }
+
+        function viewStudentDetail(id) {
+            window.location.href = `StudentDetail.html?id=${id}`;
         }
     </script>
 </body>
